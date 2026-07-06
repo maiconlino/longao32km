@@ -1,4 +1,4 @@
-const CACHE = 'longao32km-v1';
+const CACHE = 'longao32km-v2';
 const ASSETS = [
   './',
   './index.html',

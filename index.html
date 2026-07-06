@@ -113,11 +113,6 @@
   .cp .delta.ahead{color:var(--green);}
   .cp .delta.behind{color:var(--red);}
 
-  .evt{display:flex;justify-content:space-between;padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.05);font-size:.78rem;}
-  .evt:last-child{border-bottom:none;}
-  .evt .e-time{color:var(--muted);width:56px;flex-shrink:0;}
-  .evt .e-txt{flex:1;}
-
   .footer-note{text-align:center;color:var(--muted);font-size:.72rem;margin-top:18px;line-height:1.5;}
   .warn{background:rgba(255,209,102,.12);border:1px solid rgba(255,209,102,.35);color:var(--gold);
     border-radius:12px;padding:10px 12px;font-size:.78rem;line-height:1.4;margin-bottom:14px;}
@@ -163,8 +158,12 @@
     <a id="icsLink" download="alertas-longao32km.ics">
       <button class="btn gold">📅 Baixar alertas atualizados (.ics)</button>
     </a>
-    <div id="evtPreview" style="margin-top:10px;"></div>
     <button class="btn-link" id="resetBtn">reiniciar (apertei START por engano)</button>
+  </div>
+
+  <div class="card" id="nutriCard" style="display:none;">
+    <h2>Gel e sal — toque ao tomar</h2>
+    <div id="nutriList"></div>
   </div>
 
   <div class="card">
@@ -178,8 +177,8 @@
   </div>
 
   <div class="footer-note">
-    Água você mesmo controla no percurso (levando pouca e comprando pelo caminho); só gel e sal viram alerta no pulso.<br>
-    Toque nos postos de água pra marcar como feito. Progresso salvo neste aparelho. Funciona offline após o primeiro carregamento.
+    Água você mesmo controla no percurso (levando pouca e comprando pelo caminho).<br>
+    Toque nos itens de gel/sal e nos postos de água pra marcar como feito. Progresso salvo neste aparelho. Funciona offline após o primeiro carregamento.
   </div>
 </div>
 
@@ -235,10 +234,11 @@ function icsLocal(date){
 }
 
 // ---------- estado persistido ----------
-let state = { startTimeMs: null, checkpoints:{} };
+let state = { startTimeMs: null, checkpoints:{}, nutrition:{} };
 try{
   const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
   if(saved) state = saved;
+  if(!state.nutrition) state.nutrition = {};
 }catch(e){}
 function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
@@ -378,13 +378,45 @@ function buildICS(startDate){
   return lines.join('\r\n');
 }
 
-function renderEventPreview(startDate){
+const nutriList = document.getElementById('nutriList');
+function renderNutritionChecklist(startDate){
   const events = buildEvents(startDate);
-  const box = document.getElementById('evtPreview');
-  box.innerHTML = events.map(evt=>{
+  nutriList.innerHTML = '';
+  events.forEach(evt=>{
+    const key = String(evt.min);
     const lbl = evtLabel(evt);
-    return '<div class="evt"><div class="e-time">'+fmtClock(evt.at)+'</div><div class="e-txt">'+lbl.emoji+' '+lbl.text+'</div></div>';
-  }).join('');
+    const targetSec = evt.min*60;
+    const done = state.nutrition[key];
+    const el = document.createElement('div');
+    el.className = 'cp' + (done ? ' done' : '');
+    let deltaHtml = '';
+    if(done && done.actualSec != null){
+      const delta = done.actualSec - targetSec;
+      const sign = delta <= 0 ? 'ahead' : 'behind';
+      const txt = (delta<=0?'-':'+') + fmtMMSS(Math.abs(delta));
+      deltaHtml = '<div class="delta '+sign+'">'+txt+'</div>';
+    }
+    el.innerHTML =
+      '<div class="dist">'+lbl.emoji+'</div>'+
+      '<div class="info">'+
+        '<div class="t1">'+lbl.text+'</div>'+
+        '<div class="t2">alvo '+fmtClock(evt.at)+'</div>'+
+      '</div>'+
+      deltaHtml+
+      '<button class="check">'+(done?'✓':'')+'</button>';
+    el.querySelector('.check').onclick = ()=>{
+      if(state.nutrition[key]){
+        delete state.nutrition[key];
+      } else {
+        const elapsed = state.startTimeMs ? (Date.now()-state.startTimeMs)/1000 : targetSec;
+        state.nutrition[key] = { actualSec: elapsed };
+        vibrate();
+      }
+      save();
+      renderNutritionChecklist(startDate);
+    };
+    nutriList.appendChild(el);
+  });
 }
 
 function activateICS(startDate){
@@ -394,7 +426,8 @@ function activateICS(startDate){
   const link = document.getElementById('icsLink');
   link.href = url;
   document.getElementById('icsCard').style.display = '';
-  renderEventPreview(startDate);
+  document.getElementById('nutriCard').style.display = '';
+  renderNutritionChecklist(startDate);
 }
 
 // ---------- start / cronômetro ----------
@@ -414,8 +447,10 @@ resetBtn.onclick = ()=>{
   if(!confirm('Reiniciar o cronômetro e apagar os alertas gerados?')) return;
   state.startTimeMs = null;
   state.checkpoints = {};
+  state.nutrition = {};
   save();
   document.getElementById('icsCard').style.display = 'none';
+  document.getElementById('nutriCard').style.display = 'none';
   startBtn.textContent = '▶️ START — comecei a correr agora';
   startBtn.disabled = false;
   renderCheckpoints();
