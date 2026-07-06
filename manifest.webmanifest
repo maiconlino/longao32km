@@ -1,0 +1,19 @@
+{
+  "name": "Longão 32km - Semana 14",
+  "short_name": "Longão32",
+  "description": "App de treino - 32km longo em ritmo de prova, madrugada 11/07/2026",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#160b2e",
+  "theme_color": "#160b2e",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

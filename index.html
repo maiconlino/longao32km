@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#160b2e">
+<title>Longão 32km - Semana 14</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  :root{
+    --bg:#160b2e;
+    --bg2:#241145;
+    --card:#2a1454;
+    --card2:#39186f;
+    --violet:#a970ff;
+    --violet-soft:#d8b8ff;
+    --gold:#ffd166;
+    --green:#3ddc84;
+    --red:#ff5a5a;
+    --text:#f3ecff;
+    --muted:#a698c9;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(circle at 50% -10%, var(--bg2), var(--bg) 60%);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    min-height:100vh;
+    padding:16px 14px 60px;
+  }
+  .wrap{max-width:520px;margin:0 auto;}
+  header{text-align:center;margin-bottom:16px;}
+  header h1{font-size:1.2rem;margin:0 0 4px;letter-spacing:.3px;}
+  header .sub{color:var(--muted);font-size:.85rem;}
+  .badge{
+    display:inline-block;background:var(--violet);color:#1a0a33;font-weight:700;
+    border-radius:20px;padding:3px 12px;font-size:.72rem;margin-top:8px;letter-spacing:.5px;
+  }
+  .card{
+    background:linear-gradient(180deg,var(--card),var(--card2));
+    border:1px solid rgba(169,112,255,.22);
+    border-radius:18px;padding:16px;margin-bottom:14px;
+    box-shadow:0 8px 24px rgba(0,0,0,.3);
+  }
+  .card h2{font-size:.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--violet-soft);margin:0 0 10px;}
+  .big-timer{
+    font-size:2.6rem;font-weight:800;text-align:center;letter-spacing:1px;
+    font-variant-numeric:tabular-nums;color:#fff;
+  }
+  .timer-label{text-align:center;color:var(--muted);font-size:.8rem;margin-top:2px;}
+  .row-2{display:flex;gap:10px;margin-top:12px;}
+  .mini{flex:1;background:rgba(255,255,255,.04);border-radius:12px;padding:8px 10px;text-align:center;}
+  .mini .v{font-size:1.1rem;font-weight:700;font-variant-numeric:tabular-nums;}
+  .mini .l{font-size:.68rem;color:var(--muted);margin-top:2px;}
+  .status-pill{
+    text-align:center;margin-top:10px;font-size:.78rem;font-weight:700;
+    padding:6px;border-radius:10px;background:rgba(255,255,255,.05);color:var(--muted);
+  }
+  .status-pill.ahead{color:var(--green);}
+  .status-pill.behind{color:var(--red);}
+
+  .btn{
+    width:100%;padding:14px;border-radius:12px;border:none;font-weight:800;font-size:1rem;
+    background:var(--violet);color:#1a0a33;margin-top:8px;
+  }
+  .btn.secondary{background:transparent;border:1px solid rgba(169,112,255,.4);color:var(--violet-soft);font-weight:700;font-size:.9rem;}
+  .btn.gold{background:var(--gold);color:#332200;}
+  .btn.on{background:var(--green);color:#04240f;}
+  .btn:disabled{opacity:.4;}
+  .btn-link{background:none;border:none;color:var(--muted);font-size:.72rem;text-decoration:underline;padding:8px;width:100%;}
+
+  .seg{
+    display:flex;align-items:flex-start;gap:12px;padding:10px 6px;
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .seg:last-child{border-bottom:none;}
+  .seg .num{
+    width:30px;height:30px;border-radius:50%;background:rgba(169,112,255,.15);
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;
+    color:var(--violet-soft);flex-shrink:0;border:1px solid rgba(169,112,255,.35);
+  }
+  .seg.active .num{background:var(--gold);color:#332200;border-color:var(--gold);}
+  .seg .info .t1{font-size:.92rem;font-weight:700;}
+  .seg.active .info .t1{color:var(--gold);}
+  .seg .info .t2{font-size:.75rem;color:var(--muted);margin-top:2px;}
+  .seg .info .t3{font-size:.72rem;color:var(--violet-soft);margin-top:2px;}
+
+  .cp{
+    display:flex;align-items:center;gap:10px;padding:9px 6px;
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .cp:last-child{border-bottom:none;}
+  .cp .dist{
+    width:44px;height:44px;border-radius:50%;background:rgba(169,112,255,.12);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.74rem;
+    color:var(--violet-soft);flex-shrink:0;border:1px solid rgba(169,112,255,.3);
+  }
+  .cp .info{flex:1;min-width:0;}
+  .cp .info .t1{font-size:.88rem;font-weight:600;}
+  .cp .info .t2{font-size:.7rem;color:var(--muted);margin-top:1px;}
+  .cp .check{
+    width:36px;height:36px;border-radius:10px;border:1px solid rgba(169,112,255,.35);
+    background:transparent;color:var(--violet);font-size:1.05rem;flex-shrink:0;
+  }
+  .cp.done .check{background:var(--green);border-color:var(--green);color:#04240f;}
+  .cp.done .info .t1{color:var(--green);}
+  .cp .delta{font-size:.68rem;font-weight:700;margin-left:2px;min-width:42px;text-align:right;}
+  .cp .delta.ahead{color:var(--green);}
+  .cp .delta.behind{color:var(--red);}
+
+  .evt{display:flex;justify-content:space-between;padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.05);font-size:.78rem;}
+  .evt:last-child{border-bottom:none;}
+  .evt .e-time{color:var(--muted);width:56px;flex-shrink:0;}
+  .evt .e-txt{flex:1;}
+
+  .footer-note{text-align:center;color:var(--muted);font-size:.72rem;margin-top:18px;line-height:1.5;}
+  .warn{background:rgba(255,209,102,.12);border:1px solid rgba(255,209,102,.35);color:var(--gold);
+    border-radius:12px;padding:10px 12px;font-size:.78rem;line-height:1.4;margin-bottom:14px;}
+  .flash{
+    position:fixed;left:0;right:0;top:0;padding:14px 16px;text-align:center;font-weight:700;
+    background:var(--gold);color:#332200;transform:translateY(-100%);transition:transform .25s;z-index:50;
+  }
+  .flash.show{transform:translateY(0);}
+</style>
+</head>
+<body>
+<div id="flash" class="flash"></div>
+<div class="wrap">
+  <header>
+    <h1>Longão 32km — Semana 14</h1>
+    <div class="sub">Sábado 11/07/2026 • Largada planejada 03:30 (madrugada)</div>
+    <span class="badge">7:45 conversa → 7:15 ritmo de prova → 7:45 conversa</span><br>
+    <span class="badge" style="background:var(--gold);color:#332200;margin-top:6px;">Gel a 30/30min • Sal a cada 1h</span>
+  </header>
+
+  <div class="warn">
+    ⚠️ Os alertas de gel/sal só existem <b>depois</b> que você aperta START abaixo. Eles são gerados com o horário real do seu início — não um horário fixo — então funcionam mesmo se você começar um pouco antes ou depois das 03:30.
+  </div>
+
+  <div class="card" id="timerCard">
+    <h2 id="timerTitle">Antes da largada</h2>
+    <div class="big-timer" id="bigTimer">--:--:--</div>
+    <div class="timer-label" id="timerLabel">alvo: 11/07/2026 às 03:30</div>
+    <div class="row-2">
+      <div class="mini"><div class="v" id="projFinish">~3h58</div><div class="l">chegada estimada</div></div>
+      <div class="mini"><div class="v" id="curPace">—</div><div class="l">pace alvo agora</div></div>
+    </div>
+    <div class="status-pill" id="statusPill">aguardando você apertar START</div>
+    <button class="btn" id="startBtn">▶️ START — comecei a correr agora</button>
+    <button class="btn secondary" id="wakeBtn">🔆 Manter tela ligada</button>
+  </div>
+
+  <div class="card" id="icsCard" style="display:none;">
+    <h2>Alertas no relógio / Apple Watch</h2>
+    <div style="font-size:.82rem;color:var(--muted);line-height:1.5;margin-bottom:8px;">
+      Gerados a partir do seu horário real de início. Baixe e importe no Calendário agora, antes de guardar o celular.
+    </div>
+    <a id="icsLink" download="alertas-longao32km.ics">
+      <button class="btn gold">📅 Baixar alertas atualizados (.ics)</button>
+    </a>
+    <div id="evtPreview" style="margin-top:10px;"></div>
+    <button class="btn-link" id="resetBtn">reiniciar (apertei START por engano)</button>
+  </div>
+
+  <div class="card">
+    <h2>Treino (1 – 3)</h2>
+    <div id="segList"></div>
+  </div>
+
+  <div class="card">
+    <h2>Água (a cada 2,5km — controle seu, sem alerta no relógio)</h2>
+    <div id="cpList"></div>
+  </div>
+
+  <div class="footer-note">
+    Água você mesmo controla no percurso (levando pouca e comprando pelo caminho); só gel e sal viram alerta no pulso.<br>
+    Toque nos postos de água pra marcar como feito. Progresso salvo neste aparelho. Funciona offline após o primeiro carregamento.
+  </div>
+</div>
+
+<script>
+// ---------- plano de pace ----------
+const FINISH_KM = 32;
+const PACE_EASY = 465;   // 7:45/km
+const PACE_RACE = 435;   // 7:15/km
+const SEG1_END = 7;      // km
+const SEG2_END = 26;     // km (7 + 19)
+
+function paceAt(d){
+  if(d <= SEG1_END) return PACE_EASY;
+  if(d <= SEG2_END) return PACE_RACE;
+  return PACE_EASY;
+}
+function cumulativeTime(d){
+  if(d <= SEG1_END) return PACE_EASY*d;
+  if(d <= SEG2_END) return PACE_EASY*SEG1_END + PACE_RACE*(d-SEG1_END);
+  return PACE_EASY*SEG1_END + PACE_RACE*(SEG2_END-SEG1_END) + PACE_EASY*(d-SEG2_END);
+}
+const FINISH_SEC = cumulativeTime(FINISH_KM);
+
+const SEGMENTS = [
+  { n:1, label:'7km em ritmo de conversa', pace:PACE_EASY, from:0, to:7 },
+  { n:2, label:'19km a 7:15/km — ritmo de prova (alvo do treino)', pace:PACE_RACE, from:7, to:26 },
+  { n:3, label:'6km em ritmo de conversa', pace:PACE_EASY, from:26, to:32 }
+];
+
+const TARGET_START = new Date(2026, 6, 11, 3, 30, 0); // alvo de referência (não trava o cronômetro)
+const STORAGE_KEY = 'longao32km_v1';
+const GEL_INTERVAL_MIN = 30;
+const SALT_INTERVAL_MIN = 60;
+const PLAN_MARGIN_MIN = 270; // até 4h30, margem sobre a estimativa de 3h58-4h10
+
+// ---------- utils ----------
+function fmtMMSS(totalSec){
+  const s = Math.max(0, Math.round(totalSec));
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+  if(h>0) return h+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+  return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+}
+function fmtPace(secPerKm){
+  const m = Math.floor(secPerKm/60), s = Math.round(secPerKm%60);
+  return m+':'+String(s).padStart(2,'0')+'/km';
+}
+function fmtClock(date){
+  return date.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+function pad(n){ return String(n).padStart(2,'0'); }
+function icsLocal(date){
+  return date.getFullYear()+pad(date.getMonth()+1)+pad(date.getDate())+'T'+pad(date.getHours())+pad(date.getMinutes())+pad(date.getSeconds());
+}
+
+// ---------- estado persistido ----------
+let state = { startTimeMs: null, checkpoints:{} };
+try{
+  const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+  if(saved) state = saved;
+}catch(e){}
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+// ---------- checkpoints de água ----------
+const CHECKPOINTS = [];
+for(let d=2.5; d<FINISH_KM-0.001; d+=2.5){
+  CHECKPOINTS.push({ km:d, targetSec:cumulativeTime(d), targetPace:paceAt(d), isFinish:false });
+}
+CHECKPOINTS.push({ km:FINISH_KM, targetSec:FINISH_SEC, targetPace:paceAt(FINISH_KM), isFinish:true });
+
+const cpList = document.getElementById('cpList');
+function renderCheckpoints(){
+  cpList.innerHTML = '';
+  CHECKPOINTS.forEach((cp,i)=>{
+    const key = String(i);
+    const done = state.checkpoints[key];
+    const el = document.createElement('div');
+    el.className = 'cp' + (done ? ' done' : '');
+    let deltaHtml = '';
+    if(done && done.actualSec != null){
+      const delta = done.actualSec - cp.targetSec;
+      const sign = delta <= 0 ? 'ahead' : 'behind';
+      const txt = (delta<=0?'-':'+') + fmtMMSS(Math.abs(delta));
+      deltaHtml = '<div class="delta '+sign+'">'+txt+'</div>';
+    }
+    el.innerHTML =
+      '<div class="dist">'+cp.km+'</div>'+
+      '<div class="info">'+
+        '<div class="t1">'+(cp.isFinish?'🏁 Chegada':'Água '+cp.km+'km')+'</div>'+
+        '<div class="t2">planejado '+fmtMMSS(cp.targetSec)+' • '+fmtPace(cp.targetPace)+'</div>'+
+      '</div>'+
+      deltaHtml+
+      '<button class="check">'+(done?'✓':'')+'</button>';
+    el.querySelector('.check').onclick = ()=>{
+      if(state.checkpoints[key]){
+        delete state.checkpoints[key];
+      } else {
+        const elapsed = state.startTimeMs ? (Date.now()-state.startTimeMs)/1000 : cp.targetSec;
+        state.checkpoints[key] = { actualSec: elapsed };
+        vibrate();
+      }
+      save();
+      renderCheckpoints();
+    };
+    cpList.appendChild(el);
+  });
+}
+
+// ---------- segmentos ----------
+const segList = document.getElementById('segList');
+function renderSegments(activeKm){
+  segList.innerHTML = '';
+  SEGMENTS.forEach(seg=>{
+    const isActive = activeKm != null && activeKm >= seg.from && activeKm < seg.to;
+    const el = document.createElement('div');
+    el.className = 'seg' + (isActive ? ' active' : '');
+    const dur = seg.pace*(seg.to-seg.from);
+    el.innerHTML =
+      '<div class="num">'+seg.n+'</div>'+
+      '<div class="info">'+
+        '<div class="t1">'+seg.label+'</div>'+
+        '<div class="t2">'+fmtPace(seg.pace)+' • ~'+fmtMMSS(dur)+'</div>'+
+      '</div>';
+    segList.appendChild(el);
+  });
+}
+
+function vibrate(){ if(navigator.vibrate) navigator.vibrate([80,40,80]); }
+
+// ---------- geração do .ics a partir do START real ----------
+function buildEvents(startDate){
+  const events = [];
+  for(let m=GEL_INTERVAL_MIN, idx=0; m<=PLAN_MARGIN_MIN; m+=GEL_INTERVAL_MIN, idx++){
+    const withSalt = idx % 2 === 1; // coincide com múltiplos de 60min
+    events.push({
+      min:m,
+      at: new Date(startDate.getTime()+m*60000),
+      withSalt
+    });
+  }
+  return events;
+}
+function evtLabel(evt){
+  const hh = Math.floor(evt.min/60), mm = evt.min%60;
+  const timeLabel = hh>0 ? (hh+'h'+(mm?pad(mm):'')) : (evt.min+'min');
+  if(evt.withSalt) return { emoji:'☕🧂', text: timeLabel+' — Gel (cafeína) + Sal' };
+  return { emoji:'🍯', text: timeLabel+' — Gel (sem cafeína)' };
+}
+function buildICS(startDate){
+  const events = buildEvents(startDate);
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//longao32km-app//treino//PT-BR',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    ''
+  ];
+  events.forEach(evt=>{
+    const lbl = evtLabel(evt);
+    const dtstart = icsLocal(evt.at);
+    const dtend = icsLocal(new Date(evt.at.getTime()+2*60000));
+    lines.push(
+      'BEGIN:VEVENT',
+      'UID:longao32km-'+evt.min+'min@maiconlino',
+      'DTSTART:'+dtstart,
+      'DTEND:'+dtend,
+      'SUMMARY:'+lbl.emoji+' '+lbl.text,
+      'DESCRIPTION:Alerta gerado a partir do seu START real do longão 32km.',
+      'BEGIN:VALARM',
+      'ACTION:DISPLAY',
+      'DESCRIPTION:'+lbl.text,
+      'TRIGGER:PT0M',
+      'END:VALARM',
+      'END:VEVENT',
+      ''
+    );
+  });
+  // chegada estimada (baseada no plano de pace, a partir do start real)
+  const finishAt = new Date(startDate.getTime()+FINISH_SEC*1000);
+  lines.push(
+    'BEGIN:VEVENT',
+    'UID:longao32km-chegada@maiconlino',
+    'DTSTART:'+icsLocal(finishAt),
+    'DTEND:'+icsLocal(new Date(finishAt.getTime()+2*60000)),
+    'SUMMARY:🏆 Chegada estimada — Longão 32km (pace planejado)',
+    'DESCRIPTION:Horário estimado de chegada seguindo o pace planejado dos 3 trechos.',
+    'BEGIN:VALARM',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:Chegada estimada',
+    'TRIGGER:PT0M',
+    'END:VALARM',
+    'END:VEVENT',
+    ''
+  );
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+
+function renderEventPreview(startDate){
+  const events = buildEvents(startDate);
+  const box = document.getElementById('evtPreview');
+  box.innerHTML = events.map(evt=>{
+    const lbl = evtLabel(evt);
+    return '<div class="evt"><div class="e-time">'+fmtClock(evt.at)+'</div><div class="e-txt">'+lbl.emoji+' '+lbl.text+'</div></div>';
+  }).join('');
+}
+
+function activateICS(startDate){
+  const icsText = buildICS(startDate);
+  const blob = new Blob([icsText], {type:'text/calendar'});
+  const url = URL.createObjectURL(blob);
+  const link = document.getElementById('icsLink');
+  link.href = url;
+  document.getElementById('icsCard').style.display = '';
+  renderEventPreview(startDate);
+}
+
+// ---------- start / cronômetro ----------
+const startBtn = document.getElementById('startBtn');
+const resetBtn = document.getElementById('resetBtn');
+
+function doStart(){
+  state.startTimeMs = Date.now();
+  save();
+  activateICS(new Date(state.startTimeMs));
+  startBtn.textContent = '✅ Corrida em andamento';
+  startBtn.disabled = true;
+  flashMsg('START registrado — baixe e importe os alertas agora!');
+}
+startBtn.onclick = doStart;
+resetBtn.onclick = ()=>{
+  if(!confirm('Reiniciar o cronômetro e apagar os alertas gerados?')) return;
+  state.startTimeMs = null;
+  state.checkpoints = {};
+  save();
+  document.getElementById('icsCard').style.display = 'none';
+  startBtn.textContent = '▶️ START — comecei a correr agora';
+  startBtn.disabled = false;
+  renderCheckpoints();
+};
+
+if(state.startTimeMs){
+  activateICS(new Date(state.startTimeMs));
+  startBtn.textContent = '✅ Corrida em andamento';
+  startBtn.disabled = true;
+}
+
+function flashMsg(msg){
+  const f = document.getElementById('flash');
+  f.textContent = msg;
+  f.classList.add('show');
+  vibrate();
+  setTimeout(()=>f.classList.remove('show'), 4000);
+}
+
+// ---------- tick ----------
+function tick(){
+  const bigTimer = document.getElementById('bigTimer');
+  const timerTitle = document.getElementById('timerTitle');
+  const timerLabel = document.getElementById('timerLabel');
+  const statusPill = document.getElementById('statusPill');
+  const curPace = document.getElementById('curPace');
+  const projFinish = document.getElementById('projFinish');
+
+  if(!state.startTimeMs){
+    const diff = (TARGET_START.getTime()-Date.now())/1000;
+    bigTimer.textContent = diff > 0 ? fmtMMSS(diff) : '00:00:00';
+    timerTitle.textContent = 'Contagem até o alvo (referência)';
+    timerLabel.textContent = 'alvo: 11/07/2026 às 03:30';
+    statusPill.textContent = 'aguardando você apertar START';
+    statusPill.className = 'status-pill';
+    curPace.textContent = '—';
+    projFinish.textContent = '~'+fmtMMSS(FINISH_SEC);
+    renderSegments(null);
+  } else {
+    const elapsed = (Date.now()-state.startTimeMs)/1000;
+    bigTimer.textContent = fmtMMSS(elapsed);
+    timerTitle.textContent = 'Cronômetro do longão';
+    timerLabel.textContent = 'início às '+fmtClock(new Date(state.startTimeMs));
+    projFinish.textContent = fmtClock(new Date(state.startTimeMs + FINISH_SEC*1000));
+
+    let estKm;
+    if(elapsed <= FINISH_SEC){
+      let lo=0, hi=FINISH_KM;
+      for(let k=0;k<25;k++){
+        const mid=(lo+hi)/2;
+        if(cumulativeTime(mid) < elapsed) lo=mid; else hi=mid;
+      }
+      estKm = (lo+hi)/2;
+      curPace.textContent = fmtPace(paceAt(estKm));
+    } else {
+      estKm = FINISH_KM;
+      curPace.textContent = fmtPace(PACE_EASY);
+    }
+    renderSegments(estKm);
+
+    const doneKeys = Object.keys(state.checkpoints);
+    if(doneKeys.length){
+      const lastIdx = Math.max(...doneKeys.map(Number));
+      const cp = CHECKPOINTS[lastIdx];
+      const delta = state.checkpoints[String(lastIdx)].actualSec - cp.targetSec;
+      if(Math.abs(delta) < 5){
+        statusPill.textContent = 'no ritmo do planejado';
+        statusPill.className = 'status-pill';
+      } else if(delta < 0){
+        statusPill.textContent = fmtMMSS(Math.abs(delta))+' à frente do planejado';
+        statusPill.className = 'status-pill ahead';
+      } else {
+        statusPill.textContent = fmtMMSS(delta)+' atrás do planejado';
+        statusPill.className = 'status-pill behind';
+      }
+    } else {
+      statusPill.textContent = elapsed > FINISH_SEC ? 'treino concluído (estimativa)' : 'em treino';
+      statusPill.className = 'status-pill';
+    }
+  }
+}
+
+renderCheckpoints();
+tick();
+setInterval(tick, 1000);
+
+// ---------- Wake Lock ----------
+let wakeLock = null;
+const wakeBtn = document.getElementById('wakeBtn');
+wakeBtn.onclick = async ()=>{
+  try{
+    if(!wakeLock){
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeBtn.textContent = '✅ Tela ligada';
+      wakeBtn.classList.add('on');
+      wakeLock.addEventListener('release', ()=>{
+        wakeBtn.textContent = '🔆 Manter tela ligada';
+        wakeBtn.classList.remove('on');
+        wakeLock = null;
+      });
+    } else {
+      await wakeLock.release();
+      wakeLock = null;
+    }
+  }catch(e){
+    wakeBtn.textContent = 'Wake Lock indisponível';
+  }
+};
+document.addEventListener('visibilitychange', async ()=>{
+  if(wakeLock !== null && document.visibilityState === 'visible'){
+    try{ wakeLock = await navigator.wakeLock.request('screen'); }catch(e){}
+  }
+});
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
