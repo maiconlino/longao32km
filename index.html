@@ -139,6 +139,18 @@
     ⚠️ Os alertas de gel/sal no relógio só existem <b>depois</b> que você aperta START abaixo. Eles são gerados com o horário real do seu início — não um horário fixo — então funcionam mesmo se você começar um pouco antes ou depois das 03:30. Água não vira alerta, é só o checklist do posto.
   </div>
 
+  <div class="card" id="supplyCard">
+    <h2>Leve com você</h2>
+    <div class="row-2">
+      <div class="mini"><div class="v" id="supGelPlain">–</div><div class="l">🍯 gel sem cafeína</div></div>
+      <div class="mini"><div class="v" id="supGelCaf">–</div><div class="l">☕ gel com cafeína</div></div>
+    </div>
+    <div class="row-2" style="margin-top:10px;">
+      <div class="mini"><div class="v" id="supSalt">–</div><div class="l">🧂 cápsulas SaltStick</div></div>
+      <div class="mini"><div class="v" id="supWater">–</div><div class="l">💧 água (estimada)</div></div>
+    </div>
+  </div>
+
   <div class="card" id="timerCard">
     <h2 id="timerTitle">Antes da largada</h2>
     <div class="big-timer" id="bigTimer">--:--:--</div>
@@ -242,6 +254,21 @@ for(let d=2.5; d<FINISH_KM-0.001; d+=2.5){
   CHECKPOINTS.push({ km:d, targetSec:cumulativeTime(d), targetPace:paceAt(d), isFinish:false, hasSalt, caffeine:hasSalt });
 }
 CHECKPOINTS.push({ km:FINISH_KM, targetSec:FINISH_SEC, targetPace:paceAt(FINISH_KM), isFinish:true, hasSalt:false, caffeine:false });
+
+// ---------- resumo do que levar ----------
+const WATER_ML_PER_STOP = 180;
+function renderSupplySummary(){
+  const gelStops = CHECKPOINTS.filter(cp=>!cp.isFinish);
+  const gelCaf = gelStops.filter(cp=>cp.hasSalt).length;
+  const gelPlain = gelStops.length - gelCaf;
+  const waterStops = CHECKPOINTS.length;
+  const waterLiters = (waterStops*WATER_ML_PER_STOP/1000).toFixed(1);
+  document.getElementById('supGelPlain').textContent = gelPlain;
+  document.getElementById('supGelCaf').textContent = gelCaf;
+  document.getElementById('supSalt').textContent = gelCaf;
+  document.getElementById('supWater').textContent = waterStops+' paradas · ~'+waterLiters+'L';
+}
+renderSupplySummary();
 
 function actionLine(cp){
   if(cp.isFinish) return '🏁 chegada';
