@@ -112,6 +112,8 @@
   .cp .delta{font-size:.68rem;font-weight:700;margin-left:2px;min-width:42px;text-align:right;}
   .cp .delta.ahead{color:var(--green);}
   .cp .delta.behind{color:var(--red);}
+  .cp .info .t3{font-size:.72rem;color:var(--gold);margin-top:3px;font-weight:600;}
+  .cp.done .info .t3{color:var(--green);}
 
   .footer-note{text-align:center;color:var(--muted);font-size:.72rem;margin-top:18px;line-height:1.5;}
   .warn{background:rgba(255,209,102,.12);border:1px solid rgba(255,209,102,.35);color:var(--gold);
@@ -130,11 +132,11 @@
     <h1>Longão 32km — Semana 14</h1>
     <div class="sub">Sábado 11/07/2026 • Largada planejada 03:30 (madrugada)</div>
     <span class="badge">7:45 conversa → 7:15 ritmo de prova → 7:45 conversa</span><br>
-    <span class="badge" style="background:var(--gold);color:#332200;margin-top:6px;">Gel a 30/30min • Sal a cada 1h</span>
+    <span class="badge" style="background:var(--gold);color:#332200;margin-top:6px;">Água + gel em todo posto (2,5km) • Sal a cada 5km</span>
   </header>
 
   <div class="warn">
-    ⚠️ Os alertas de gel/sal só existem <b>depois</b> que você aperta START abaixo. Eles são gerados com o horário real do seu início — não um horário fixo — então funcionam mesmo se você começar um pouco antes ou depois das 03:30.
+    ⚠️ Os alertas de gel/sal no relógio só existem <b>depois</b> que você aperta START abaixo. Eles são gerados com o horário real do seu início — não um horário fixo — então funcionam mesmo se você começar um pouco antes ou depois das 03:30. Água não vira alerta, é só o checklist do posto.
   </div>
 
   <div class="card" id="timerCard">
@@ -161,24 +163,19 @@
     <button class="btn-link" id="resetBtn">reiniciar (apertei START por engano)</button>
   </div>
 
-  <div class="card" id="nutriCard" style="display:none;">
-    <h2>Gel e sal — toque ao tomar</h2>
-    <div id="nutriList"></div>
-  </div>
-
   <div class="card">
     <h2>Treino (1 – 3)</h2>
     <div id="segList"></div>
   </div>
 
   <div class="card">
-    <h2>Água (a cada 2,5km — controle seu, sem alerta no relógio)</h2>
+    <h2>Postos (a cada 2,5km) — água, gel e sal juntos</h2>
     <div id="cpList"></div>
   </div>
 
   <div class="footer-note">
-    Água você mesmo controla no percurso (levando pouca e comprando pelo caminho).<br>
-    Toque nos itens de gel/sal e nos postos de água pra marcar como feito. Progresso salvo neste aparelho. Funciona offline após o primeiro carregamento.
+    Um toque no posto marca água + gel (+ sal, quando houver) como feitos, tudo junto. Só gel/sal viram alerta no relógio; água é controle seu (leva pouca e compra pelo caminho).<br>
+    Progresso salvo neste aparelho. Funciona offline após o primeiro carregamento.
   </div>
 </div>
 
@@ -210,9 +207,6 @@ const SEGMENTS = [
 
 const TARGET_START = new Date(2026, 6, 11, 3, 30, 0); // alvo de referência (não trava o cronômetro)
 const STORAGE_KEY = 'longao32km_v1';
-const GEL_INTERVAL_MIN = 30;
-const SALT_INTERVAL_MIN = 60;
-const PLAN_MARGIN_MIN = 270; // até 4h30, margem sobre a estimativa de 3h58-4h10
 
 // ---------- utils ----------
 function fmtMMSS(totalSec){
@@ -234,20 +228,25 @@ function icsLocal(date){
 }
 
 // ---------- estado persistido ----------
-let state = { startTimeMs: null, checkpoints:{}, nutrition:{} };
+let state = { startTimeMs: null, checkpoints:{} };
 try{
   const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
   if(saved) state = saved;
-  if(!state.nutrition) state.nutrition = {};
 }catch(e){}
 function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
-// ---------- checkpoints de água ----------
+// ---------- postos a cada 2,5km: água + gel (+ sal a cada 5km, com cafeína) ----------
 const CHECKPOINTS = [];
 for(let d=2.5; d<FINISH_KM-0.001; d+=2.5){
-  CHECKPOINTS.push({ km:d, targetSec:cumulativeTime(d), targetPace:paceAt(d), isFinish:false });
+  const hasSalt = Math.round(d*10) % 50 === 0; // múltiplos de 5km
+  CHECKPOINTS.push({ km:d, targetSec:cumulativeTime(d), targetPace:paceAt(d), isFinish:false, hasSalt, caffeine:hasSalt });
 }
-CHECKPOINTS.push({ km:FINISH_KM, targetSec:FINISH_SEC, targetPace:paceAt(FINISH_KM), isFinish:true });
+CHECKPOINTS.push({ km:FINISH_KM, targetSec:FINISH_SEC, targetPace:paceAt(FINISH_KM), isFinish:true, hasSalt:false, caffeine:false });
+
+function actionLine(cp){
+  if(cp.isFinish) return '🏁 chegada';
+  return '💧 água + ' + (cp.hasSalt ? '☕🧂 gel (cafeína) + sal' : '🍯 gel (sem cafeína)');
+}
 
 const cpList = document.getElementById('cpList');
 function renderCheckpoints(){
@@ -264,11 +263,13 @@ function renderCheckpoints(){
       const txt = (delta<=0?'-':'+') + fmtMMSS(Math.abs(delta));
       deltaHtml = '<div class="delta '+sign+'">'+txt+'</div>';
     }
+    const clockPart = state.startTimeMs ? (' • '+fmtClock(new Date(state.startTimeMs+cp.targetSec*1000))) : '';
     el.innerHTML =
       '<div class="dist">'+cp.km+'</div>'+
       '<div class="info">'+
-        '<div class="t1">'+(cp.isFinish?'🏁 Chegada':'Água '+cp.km+'km')+'</div>'+
-        '<div class="t2">planejado '+fmtMMSS(cp.targetSec)+' • '+fmtPace(cp.targetPace)+'</div>'+
+        '<div class="t1">'+(cp.isFinish?'🏁 Chegada':'Posto '+cp.km+'km')+'</div>'+
+        '<div class="t2">planejado '+fmtMMSS(cp.targetSec)+clockPart+' • '+fmtPace(cp.targetPace)+'</div>'+
+        '<div class="t3">'+actionLine(cp)+'</div>'+
       '</div>'+
       deltaHtml+
       '<button class="check">'+(done?'✓':'')+'</button>';
@@ -308,27 +309,12 @@ function renderSegments(activeKm){
 
 function vibrate(){ if(navigator.vibrate) navigator.vibrate([80,40,80]); }
 
-// ---------- geração do .ics a partir do START real ----------
-function buildEvents(startDate){
-  const events = [];
-  for(let m=GEL_INTERVAL_MIN, idx=0; m<=PLAN_MARGIN_MIN; m+=GEL_INTERVAL_MIN, idx++){
-    const withSalt = idx % 2 === 1; // coincide com múltiplos de 60min
-    events.push({
-      min:m,
-      at: new Date(startDate.getTime()+m*60000),
-      withSalt
-    });
-  }
-  return events;
-}
-function evtLabel(evt){
-  const hh = Math.floor(evt.min/60), mm = evt.min%60;
-  const timeLabel = hh>0 ? (hh+'h'+(mm?pad(mm):'')) : (evt.min+'min');
-  if(evt.withSalt) return { emoji:'☕🧂', text: timeLabel+' — Gel (cafeína) + Sal' };
-  return { emoji:'🍯', text: timeLabel+' — Gel (sem cafeína)' };
+// ---------- geração do .ics a partir do START real (gel/sal nos mesmos postos do checklist) ----------
+function nutritionSummary(cp){
+  if(cp.hasSalt) return { emoji:'☕🧂', text: 'Posto '+cp.km+'km — Gel (cafeína) + Sal' };
+  return { emoji:'🍯', text: 'Posto '+cp.km+'km — Gel (sem cafeína)' };
 }
 function buildICS(startDate){
-  const events = buildEvents(startDate);
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -337,13 +323,14 @@ function buildICS(startDate){
     'METHOD:PUBLISH',
     ''
   ];
-  events.forEach(evt=>{
-    const lbl = evtLabel(evt);
-    const dtstart = icsLocal(evt.at);
-    const dtend = icsLocal(new Date(evt.at.getTime()+2*60000));
+  CHECKPOINTS.filter(cp=>!cp.isFinish).forEach(cp=>{
+    const lbl = nutritionSummary(cp);
+    const at = new Date(startDate.getTime()+cp.targetSec*1000);
+    const dtstart = icsLocal(at);
+    const dtend = icsLocal(new Date(at.getTime()+2*60000));
     lines.push(
       'BEGIN:VEVENT',
-      'UID:longao32km-'+evt.min+'min@maiconlino',
+      'UID:longao32km-posto-'+String(cp.km).replace('.','_')+'@maiconlino',
       'DTSTART:'+dtstart,
       'DTEND:'+dtend,
       'SUMMARY:'+lbl.emoji+' '+lbl.text,
@@ -378,47 +365,6 @@ function buildICS(startDate){
   return lines.join('\r\n');
 }
 
-const nutriList = document.getElementById('nutriList');
-function renderNutritionChecklist(startDate){
-  const events = buildEvents(startDate);
-  nutriList.innerHTML = '';
-  events.forEach(evt=>{
-    const key = String(evt.min);
-    const lbl = evtLabel(evt);
-    const targetSec = evt.min*60;
-    const done = state.nutrition[key];
-    const el = document.createElement('div');
-    el.className = 'cp' + (done ? ' done' : '');
-    let deltaHtml = '';
-    if(done && done.actualSec != null){
-      const delta = done.actualSec - targetSec;
-      const sign = delta <= 0 ? 'ahead' : 'behind';
-      const txt = (delta<=0?'-':'+') + fmtMMSS(Math.abs(delta));
-      deltaHtml = '<div class="delta '+sign+'">'+txt+'</div>';
-    }
-    el.innerHTML =
-      '<div class="dist">'+lbl.emoji+'</div>'+
-      '<div class="info">'+
-        '<div class="t1">'+lbl.text+'</div>'+
-        '<div class="t2">alvo '+fmtClock(evt.at)+'</div>'+
-      '</div>'+
-      deltaHtml+
-      '<button class="check">'+(done?'✓':'')+'</button>';
-    el.querySelector('.check').onclick = ()=>{
-      if(state.nutrition[key]){
-        delete state.nutrition[key];
-      } else {
-        const elapsed = state.startTimeMs ? (Date.now()-state.startTimeMs)/1000 : targetSec;
-        state.nutrition[key] = { actualSec: elapsed };
-        vibrate();
-      }
-      save();
-      renderNutritionChecklist(startDate);
-    };
-    nutriList.appendChild(el);
-  });
-}
-
 function activateICS(startDate){
   const icsText = buildICS(startDate);
   const blob = new Blob([icsText], {type:'text/calendar'});
@@ -426,8 +372,7 @@ function activateICS(startDate){
   const link = document.getElementById('icsLink');
   link.href = url;
   document.getElementById('icsCard').style.display = '';
-  document.getElementById('nutriCard').style.display = '';
-  renderNutritionChecklist(startDate);
+  renderCheckpoints();
 }
 
 // ---------- start / cronômetro ----------
@@ -447,10 +392,8 @@ resetBtn.onclick = ()=>{
   if(!confirm('Reiniciar o cronômetro e apagar os alertas gerados?')) return;
   state.startTimeMs = null;
   state.checkpoints = {};
-  state.nutrition = {};
   save();
   document.getElementById('icsCard').style.display = 'none';
-  document.getElementById('nutriCard').style.display = 'none';
   startBtn.textContent = '▶️ START — comecei a correr agora';
   startBtn.disabled = false;
   renderCheckpoints();
